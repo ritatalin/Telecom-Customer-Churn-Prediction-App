@@ -1,0 +1,35 @@
+# ▶️ Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# ▶️ Virtual environment
+venv/
+env/
+.venv/
+.env/
+
+# ▶️ Environment & secrets
+.env
+.env.*
+
+# ▶️ macOS 系統檔案
+.DS_Store
+
+# ▶️ VS Code 設定（如果你不想同步設定檔可以加上）
+.vscode/
+
+# ▶️ Jupyter Notebook checkpoints（如果有用到 Jupyter）
+.ipynb_checkpoints/
+
+# ▶️ Logs
+*.log
+
+# ▶️ Models or outputs (依情況選用)
+*.pkl
+*.h5
+*.joblib
+
+# ▶️ Others
+*.sqlite3
+*.db
