@@ -37,30 +37,94 @@ def get_feature_names(column_transformer):
     return feature_names
 
 # —— 使用者輸入 ——
-contract = st.selectbox("Contract 合約類型", ['Month-to-month', 'One year', 'Two year'])
-internet = st.radio("Internet Service 是否有上網服務", ['Yes', 'No'])
-referrals = st.number_input("Number of Referrals 推薦人數", 0, 100, 1)
-dependents = st.number_input("Number of Dependents 受扶養人數", 0, 10, 0)
-married = st.radio("Married 是否已婚", ['Yes', 'No'])
-streaming_movies = st.radio("Streaming Movies 是否有看電影服務", ['Yes', 'No'])
-streaming_tv = st.radio("Streaming TV 是否有看電視服務", ['Yes', 'No'])
-tenure = st.slider("Tenure in Months 使用月數", 0, 100, 12)
-online_security = st.radio("Online Security 是否有網路安全服務", ['Yes', 'No'])
-monthly_charge = st.number_input("Monthly Charge 每月費用", 0.0, 500.0, 70.0)
+with st.expander("合約與帳務 ", expanded=True):
+    contract = st.radio("合約類型", ['Month-to-Month', 'One Year', 'Two Year'])  # 注意大小寫
+    tenure = st.number_input("使用月數", 0, 100, 10)
+    monthly_charge = st.number_input("每月費用", 0.0, 500.0, 70.0)
+
+with st.expander("服務項目 (有使用請勾選)", expanded=True):
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        internet = st.checkbox("上網服務")
+    with col2:
+        online_security = st.checkbox("網路安全服務")
+    with col3:
+        streaming_movies = st.checkbox("串流電影服務")
+    with col4:
+        streaming_tv = st.checkbox("串流電視服務")
+
+with st.expander("個人狀況", expanded=True):
+    referrals = st.number_input("推薦人數", 0, 100, 1)
+    dependents = st.number_input("扶養人數", 0, 10, 0)
+    married = st.radio("是否已婚", ['Yes', 'No'])
+
+# —— 建議留客策略文字（加粗字體18px）——
+strategy_map = {
+    "Contract": (
+        "<div style='font-size:18px; font-weight:bold;'>延長合約優惠</div>"
+        "［合約等級說明］<br>"
+        "- 一等｜月租制<br>"
+        "- 二等｜一年約<br>"
+        "- 三等｜兩年約<br>"
+        "- 四等｜三年以上合約<br><br>"
+        "［優惠內容］<br>"
+        "凡升級合約等級之用戶，依升級級數享月費折扣：<br>"
+        "- 升級一級 → 月費 95 折<br>"
+        "- 升級二級 → 月費 9 折<br>"
+        "- 升級三級（即由月租升至三年以上）→ 成為終生會員，<br>"
+        "  在服務內容不變的情況下，享永久固定資費續約"
+    ),
+    "Number of Referrals": (
+        "<div style='font-size:18px; font-weight:bold;'>推薦新客戶獎勵</div>"
+        "［適用對象］<br>"
+        "所有現有用戶皆可參與推薦計畫<br>"
+        "［獎勵內容］<br>"
+        "每成功推薦 2 位新用戶，獲得一張 $5 現金抵用券，每多推薦一人，額外加贈一張（例如推薦 3 位 → 獲得 2 張，以此類推）。"
+        "抵用券與推薦人數均無上限累積，每人每月限使用 1 張抵用券，抵用卷不可折現金"
+    ),
+    "Tenure in Months": (
+        "<div style='font-size:18px; font-weight:bold;'>預繳補足升級福利</div>"
+        "[適用對象] 累積使用合約未滿一年者<br>"
+        "[優惠內容]<br>"
+        "若合約累積使用時間未滿 12 個月，用戶可預繳剩餘月份，即刻享有年約福利。例如：已使用 8 個月，預繳 4 個月，即享「一年約」等級福利<br><br>"
+        "福利包含但不限於：<br>"
+        "專屬客服服務、加值服務折扣、限量活動邀約（如新品體驗、VIP日等）"
+    ),
+    "Number of Dependents": (
+        "<div style='font-size:18px; font-weight:bold;'>寵物友善方案</div>"
+        "［適用對象］無登記扶養人口但有寵物，且屬高流失風險用戶<br>"
+        "［方案內容］<br>"
+        "申辦「寵物友善價值流量方案」，可選擇（a)以優惠價購買寵物攝影機，或(b)綁約 30 個月以上享免費租用攝影機，"
+        "此方案可搭配原主方案使用，透過遠端觀看功能提升情感連結與留存率"
+    ),
+    "Monthly Charge": (
+        "<div style='font-size:18px; font-weight:bold;'>用戶預儲值優惠</div>"
+        "［適用對象］月費偏高、價格敏感、高流失風險之用戶<br>"
+        "［優惠內容］<br>"
+        "一次性儲值 $350 元（或以上）即日起享 月費 85 折優惠。折扣自儲值當月起生效，持續至金額扣抵完畢為止。"
+        "每位會員限參加一次，且儲值金額不可退費"
+    )
+}
 
 # —— 預測與顯示結果 ——
 if st.button("🔮 預測是否流失"):
+    # 將布林值轉成模型訓練用的字串
+    internet_str = "Yes" if internet else "No"
+    online_security_str = "Yes" if online_security else "No"
+    streaming_movies_str = "Yes" if streaming_movies else "No"
+    streaming_tv_str = "Yes" if streaming_tv else "No"
+
     # 組成輸入 DataFrame
     input_dict = {
         'Contract': contract,
-        'Internet Service': internet,
+        'Internet Service': internet_str,
         'Number of Referrals': referrals,
         'Number of Dependents': dependents,
         'Married': married,
-        'Streaming Movies': streaming_movies,
-        'Streaming TV': streaming_tv,
+        'Streaming Movies': streaming_movies_str,
+        'Streaming TV': streaming_tv_str,
         'Tenure in Months': tenure,
-        'Online Security': online_security,
+        'Online Security': online_security_str,
         'Monthly Charge': monthly_charge
     }
     input_df = pd.DataFrame([input_dict])[features]
@@ -76,59 +140,39 @@ if st.button("🔮 預測是否流失"):
     if prob > 0.5:
         st.warning("⚠️ 高風險用戶，建議主動聯繫留客")
 
-        # 前處理後轉 DataFrame
         feature_names = get_feature_names(pipeline.named_steps['preprocess'])
         X_trans = pipeline.named_steps['preprocess'].transform(input_df)
         X_trans_df = pd.DataFrame(X_trans, columns=feature_names)
 
-        # SHAP 解釋 (原生方式)
         explainer = shap.Explainer(pipeline.named_steps['clf'])
         shap_values = explainer(X_trans_df)
 
-        # 擷取前三正向 SHAP 特徵
         vals = shap_values.values[0]
         pos_vals = np.where(vals > 0, vals, -np.inf)
         top3_idx = np.argsort(pos_vals)[-3:][::-1]
         top3_feats = [feature_names[i] for i in top3_idx]
 
-        # 策略對照表
-        strategy_map = {
-            "Contract": (
-                "合約類型：延長合約優惠\n"
-                "續約升級優惠：續約一年升一級享 95 折，續約兩年升兩級享 9 折，"
-                "達指定級數後升為終生會員，享永久折扣與專屬禮遇。"
-            ),
-            "Number of Referrals": (
-                "推薦人數：推薦新客戶優惠\n"
-                "每推薦 2 位以上新客戶即獲得優惠券一張，推薦不限次數，累積可兌換服務折扣。"
-            ),
-            "Number of Dependents": (
-                "扶養人口：(針對無扶養人口的用戶) 寵物套餐\n"
-                "凡申辦寵物加值方案，即享「寵物攝影機」設備優惠價（或免費租用），"
-                "搭配主方案使用可遠端觀看。"
-            ),
-            "Tenure in Months": (
-                "累計合約期間：預付費用滿12個月\n"
-                "預繳費用（滿12 個月）立即升級 VIP 會員，享專屬客服、加值服務與每月驚喜禮，"
-                "並優先參與內部活動。"
-            ),
-            "Monthly Charge": (
-                "月費：大眾方案\n"
-                "一次儲值 $350 元，可自當月起享月費 85 折優惠，"
-                "優惠持續至儲值金額使用完畢為止，適合長期使用者。"
-            )
-        }
-
-
-        # 顯示策略文字
         st.subheader("💡 建議的留客策略")
-        for feat in top3_feats:
-            txt = strategy_map.get(feat, "🔍 尚未設定此欄位的策略")
-            st.markdown(f"**{feat}** ➜ {txt}")
 
-        # 繪製 SHAP waterfall
+        default_strategy = (
+            "<div style='font-size:18px;'>用戶預儲值優惠<br>"
+            "［適用對象］月費偏高、價格敏感、高流失風險之用戶<br>"
+            "［優惠內容］<br>"
+            "一次性儲值 $350 元（或以上）即日起享 月費 85 折優惠。折扣自儲值當月起生效，持續至金額扣抵完畢為止。"
+            "每位會員限參加一次，且儲值金額不可退費</div>"
+        )
+
+        for feat in top3_feats:
+            txt = strategy_map.get(feat, default_strategy)
+            st.markdown(txt, unsafe_allow_html=True)
+            st.markdown('<hr style="border:1px solid #ccc;">', unsafe_allow_html=True)
+
         fig, ax = plt.subplots()
         shap.plots.waterfall(shap_values[0], max_display=10, show=False)
         st.pyplot(fig)
+        st.markdown("""
+            **圖例說明：**  
+            🔴 紅色：提升流失風險&nbsp; / &nbsp;🔵 藍色：降低流失風險
+            """)
     else:
         st.success("✅ 穩定用戶，流失風險低")
